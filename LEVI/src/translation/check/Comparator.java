@@ -142,7 +142,7 @@ public class Comparator {
 		//////////////// Starting with translation additions
 		// Step 1: Get all concept IDs from the resultCollector and fetch translations from the database
 		List<String> headerAdditions = Arrays.asList("Concept ID", "GB/US FSN Term (For reference only)", "Preferred Term (For reference only)",
-				"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes", "Quotes", "SpaceAroundSlash", "UpperCase");
+				"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes", "Quotes", "SoftHyphen", "UpperCase", "SpaceAroundSlash");
 		
 		Set<String> conceptID = new HashSet<>();
 		for (String conceptIDentry : resultCollector.getIdsByType("NEW_TRANSLATION_CURRENT")) {
@@ -237,12 +237,14 @@ public class Comparator {
 		        
 		        List<String> regexResults = RegexValidator.validateTerm(newLangCode, newTerm);
 		        String quotesResult = regexResults.get(0);
-		        String spaceAroundSlashResult = regexResults.get(1);
-	        	String upperCaseResult = regexResults.get(2);
+		        String softHyphenResult =regexResults.get(1);
+		        String upperCaseResult = regexResults.get(2);
+		        String spaceAroundSlashResult = regexResults.get(3);
 	        	
 		        copy.add(16, quotesResult); // Add "Quotes" result
-		        copy.add(17, spaceAroundSlashResult); // Add "SpaceAroundSlash" result
+		        copy.add(17, softHyphenResult);
 		        copy.add(18, upperCaseResult); // Add "UpperCase" result
+		        copy.add(19, spaceAroundSlashResult); // Add "SpaceAroundSlash" result
 		       
 		        deltaTranslations.add(copy);
 		    }
@@ -307,7 +309,7 @@ public class Comparator {
 				"Association Target ID 2", "Association Target ID 3", "Association Target ID 4", "Notes");
 		
 		List<String> headerAddition = Arrays.asList("Concept ID", "GB/US FSN Term (For reference only)", "Preferred Term (For reference only)",
-				"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes", "Quotes", "SpaceAroundSlash", "UpperCase");
+				"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes", "Quotes", "SoftHyphen", "UpperCase", "SpaceAroundSlash");
 		
 		eszettInactivate.add(headerInactivate);
 		eszettAdditions.add(headerAddition);
