@@ -12,6 +12,7 @@ public class SiAdditionsCsvProcessor extends CsvProcessor{
 	
 	public SiAdditionsCsvProcessor(CSVReader csvReader, ResultCollector collector) {
         super(csvReader);
+		this.collector = collector;
     }
 	
 	 @Override
