@@ -13,6 +13,7 @@ public class TermspaceInactivationsCsvProcessor extends CsvProcessor{
 	
 	public TermspaceInactivationsCsvProcessor(CSVReader csvReader, ResultCollector collector) {
         super(csvReader);
+		this.collector = collector;
     }
 	
 	 @Override
