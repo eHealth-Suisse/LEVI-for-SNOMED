@@ -3,6 +3,8 @@ package translation.check;
 import java.sql.*;
 import java.util.*;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
+
 
 import java.io.UnsupportedEncodingException;
 
@@ -36,6 +38,7 @@ public class DbConnection {
 	static String SERVER_URL = Conf.getSERVER_URL();
 	static String USERNAME = Conf.getUSERNAME();
 	static String PASSWORD = Conf.getPASSWORD();
+	
 
 	public DbConnection(ResultCollector collector) {
 		this.resultCollector = collector;
@@ -200,89 +203,77 @@ public class DbConnection {
 	 * @param descriptionIds a set of description IDs and terms to search for
 	 * @throws SQLException           if a database access error occurs
 	 * @throws ClassNotFoundException if the JDBC driver is not found
-	 */
+	 */	
 	public void searchDescriptions(List<List<String>> newInactivation) throws SQLException, ClassNotFoundException {
-		List<Pair<String, String>> termConceptPairs = new ArrayList<>();
+	    List<Triple<String, String, String>> termConceptPairs = new ArrayList<>();
 
-		for (List<String> termConceptPairsSet : newInactivation) {	
-			String term = termConceptPairsSet.get(1);
-			String conceptId = termConceptPairsSet.get(3);
-			termConceptPairs.add(Pair.of(term, conceptId));		
-		}
+	    for (List<String> row : newInactivation) {
+	        String term = row.get(1);              // exact term
+	        String conceptId = row.get(3);
+	        String languageCode = row.get(2);      // language code
+	        Triple<String, String, String> pair = Triple.of(term, conceptId, languageCode);
+	        termConceptPairs.add(pair);
+	    }
 
-		connect();
+	    connect();
 
-		// create TEMP TABLE
-		String createTempTable = """
-				    CREATE TEMPORARY TABLE IF NOT EXISTS tmp_pairs (
-				        term VARCHAR(255),
-				        conceptId VARCHAR(50)
-				    )
-				""";
+	    // create TEMP TABLE with languageCode
+	    String createTempTable = """
+	        CREATE TEMPORARY TABLE IF NOT EXISTS tmp_pairs (
+	            term VARCHAR(255),
+	            conceptId VARCHAR(50),
+	            languageCode VARCHAR(10)
+	        )
+	    """;
 
-		try (Statement stmt = connection.createStatement()) {
-			stmt.execute(createTempTable);
-		}
+	    try (Statement stmt = connection.createStatement()) {
+	        stmt.execute(createTempTable);
+	    }
 
-		// add all pairs to the temporary table
-		String insertPair = "INSERT INTO tmp_pairs (term, conceptId) VALUES (?, ?)";
-		try (PreparedStatement ps = connection.prepareStatement(insertPair)) {
-			for (Pair<String, String> pair : termConceptPairs) {
-				String conceptId = pair.getRight();
+	    // insert pairs
+	    String insertPair = "INSERT INTO tmp_pairs (term, conceptId, languageCode) VALUES (?, ?, ?)";
+	    try (PreparedStatement ps = connection.prepareStatement(insertPair)) {
+	        for (Triple<String, String, String> pair : termConceptPairs) {
+	            String conceptId = pair.getMiddle();
+	            if (conceptId.length() > 30) {
+	                System.out.println("❗ conceptId too long: " + conceptId + " (length: " + conceptId.length() + ")");
+	            }
+	            ps.setString(1, pair.getLeft());
+	            ps.setString(2, pair.getMiddle());
+	            ps.setString(3, pair.getRight());
+	            ps.addBatch();
+	        }
+	        ps.executeBatch();
+	    }
 
-				if (conceptId.length() > 30) {
-					System.out.println("❗ conceptId too long: " + conceptId + " (length: " + conceptId.length() + ")");
-				}
-				ps.setString(1, pair.getLeft()); // term
-				ps.setString(2, pair.getRight()); // conceptId
-				ps.addBatch();
-			}
-			ps.executeBatch();
+	    System.out.println("Temporary table tmp_pairs created and populated with term-concept-language pairs.");
 
-		}
-		System.out.println("Temporary table tmp_pairs created and populated with term-concept pairs.");
+	    String query = """
+	        SELECT fd.id, fd.term, fd.conceptId, fd.active, fd.languageCode
+	        FROM full_description fd
+	        INNER JOIN (
+	            SELECT conceptId, term, languageCode, MAX(CAST(effectiveTime AS UNSIGNED)) AS max_effectiveTime
+	            FROM full_description
+	            GROUP BY conceptId, term, languageCode
+	        ) latest
+	          ON fd.conceptId = latest.conceptId
+	         AND fd.term = latest.term
+	         AND fd.languageCode = latest.languageCode
+	         AND CAST(fd.effectiveTime AS UNSIGNED) = latest.max_effectiveTime
+	        INNER JOIN tmp_pairs tp
+	          ON fd.conceptId = tp.conceptId
+	         AND fd.term = tp.term
+	         AND fd.languageCode = tp.languageCode
+	        WHERE fd.active = 1
+	    """;
 
-		System.out.println("Starting to query descriptions for inactivation...");
+	    try (PreparedStatement ps = connection.prepareStatement(query);
+	         ResultSet rs = ps.executeQuery()) {
+	        System.out.println("Processing translation result set for inactivations...");
+	        processTranslationResultSet("inactivations", rs);
+	    }
 
-		//TODO: Gives error because there is no languageCode
-		String query = """
-				    SELECT
-				        fd.id,
-				        fd.term,
-				        fd.conceptId,
-				        fd.active,
-				        fd.languageCode
-				    FROM full_description fd
-				    INNER JOIN (
-				        SELECT
-				            conceptId,
-				            term,
-				            languageCode,
-				            MAX(CAST(effectiveTime AS UNSIGNED)) AS max_effectiveTime
-				        FROM full_description
-				        GROUP BY conceptId, term, languageCode
-				    ) latest
-				      ON fd.conceptId = latest.conceptId
-				     AND fd.term = latest.term
-				     AND fd.languageCode = latest.languageCode
-				     AND CAST(fd.effectiveTime AS UNSIGNED) = latest.max_effectiveTime
-				    INNER JOIN tmp_pairs tp
-				      ON fd.conceptId = tp.conceptId
-				     AND fd.term = tp.term
-				    WHERE fd.active = 1
-				""";
-
-		try (PreparedStatement ps = connection.prepareStatement(query)) {
-	
-			try (ResultSet rs = ps.executeQuery()) {
-				
-				System.out.println("Starting to process translation result set for inactivations...");
-				processTranslationResultSet("inactivations", rs);
-			}
-		}
-
-		// Close the database connection
-		disconnect();
+	    disconnect();
 	}
 
 	/**

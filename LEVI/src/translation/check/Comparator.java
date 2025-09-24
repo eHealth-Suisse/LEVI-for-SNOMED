@@ -127,7 +127,7 @@ public class Comparator {
 			    specificLanguage = scanner.nextLine().trim().toLowerCase();
 	
 			    if (specificLanguage.isEmpty()) {
-			        specificLanguage = null; // oder "" je nach weiterer Verwendung
+			        specificLanguage = null;
 			        System.out.println("→ No specific language selected.");
 			        break;
 			    }
@@ -141,8 +141,15 @@ public class Comparator {
 
 		//////////////// Starting with translation additions
 		// Step 1: Get all concept IDs from the resultCollector and fetch translations from the database
-		List<String> headerAdditions = Arrays.asList("Concept ID", "GB/US FSN Term (For reference only)", "Preferred Term (For reference only)",
-				"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes", "Quotes", "SoftHyphen", "SpaceAroundSlash", "Apostrophe", "Upper/lower case");
+		List<String> headerAdditions = new ArrayList<>(); 
+		
+		if (conf.checkRegex()) {
+			headerAdditions = Arrays.asList("Concept ID", "GB/US FSN Term (For reference only)", "Preferred Term (For reference only)",
+					"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes", "Quotes", "SoftHyphen", "SpaceAroundSlash", "Apostrophe", "Upper/lower case");;
+		} else {
+			headerAdditions = Arrays.asList("Concept ID", "GB/US FSN Term (For reference only)", "Preferred Term (For reference only)",
+					"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes");
+		}
 		
 		Set<String> conceptID = new HashSet<>();
 		for (String conceptIDentry : resultCollector.getIdsByType("NEW_TRANSLATION_CURRENT")) {
@@ -197,15 +204,30 @@ public class Comparator {
 		        String oldDesccriptionStatus = oldEntry.get(11);
 		      
 		        if (!newTerm.isEmpty() && !oldTerm.isEmpty() 
-		                && newTerm.equalsIgnoreCase(oldTerm) 
+		                && newTerm.equals(oldTerm) 
 		                && !newLangCode.isEmpty() && !oldLangCode.isEmpty() 
-		                && newLangCode.equalsIgnoreCase(oldLangCode)) {
+		                && newLangCode.equals(oldLangCode)) {
 		            matchFound = true;
 
 		            if ("0".equals(oldDesccriptionStatus)) {
 		                System.out.println("🔴 Reactivate translation: " + conceptId + " - " + newTerm);
-		                
-		                //TODO: Add entry to translation changes list for reactivation --> at the moment no reactivation via import file is possible
+		                resultCollector.setFullTranslationChanges(
+		                		oldDescriptionId, 
+		                		"", //placeholder for preferred term
+		                		newTerm,
+		                		oldCaseSignificance,
+		                		newTypeId,
+		                		newLanguageRefset, newAccept, 
+		                		"", //placeholder for language reference set 2
+		                		"", //placeholder for acceptability 2
+		                		"", //placeholder for language reference set 3
+		                		"", //placeholder for acceptability 3
+		                		"", //placeholder for language reference set 4
+		                		"", //placeholder for acceptability 4
+		                		"", //placeholder for language reference set 5
+		                		"", //placeholder for acceptability 5
+		                		"Translation reactivation"
+			                );		                
 		            }		            
 		            else if (!oldAccept.isEmpty() && !newAccept.isEmpty() 
 		                    && !oldAccept.equalsIgnoreCase(newAccept)) {
@@ -242,11 +264,18 @@ public class Comparator {
 		        String apostropheResult = regexResults.get(3);
 		        String upperCaseResult = regexResults.get(4);
 		        
-		        copy.add(16, quotesResult);
-		        copy.add(17, softHyphenResult);
-		        copy.add(18, spaceAroundSlashResult);
-		        copy.add(19, apostropheResult);
-		        copy.add(20, upperCaseResult);
+		        if (conf.checkRegex()) {
+		        	copy.add(18, quotesResult);
+			        copy.add(19, softHyphenResult);
+			        copy.add(20, spaceAroundSlashResult);
+			        copy.add(21, apostropheResult);
+			        copy.add(22, upperCaseResult);
+		        }
+//		        copy.add(18, quotesResult);
+//		        copy.add(19, softHyphenResult);
+//		        copy.add(20, spaceAroundSlashResult);
+//		        copy.add(21, apostropheResult);
+//		        copy.add(22, upperCaseResult);
 		       
 		        deltaTranslations.add(copy);
 		    }
@@ -311,7 +340,7 @@ public class Comparator {
 				"Association Target ID 2", "Association Target ID 3", "Association Target ID 4", "Notes");
 		
 		List<String> headerAddition = Arrays.asList("Concept ID", "GB/US FSN Term (For reference only)", "Preferred Term (For reference only)",
-				"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes", "Quotes", "SoftHyphen", "SpaceAroundSlash", "Apostrophe", "Upper/lower case");
+				"Translated Term", "Language Code", "Case significance", "TypeId", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Language reference set", "Acceptability", "Notes", "Quotes", "SoftHyphen", "SpaceAroundSlash", "Apostrophe", "Upper/lower case");
 		
 		eszettInactivate.add(headerInactivate);
 		eszettAdditions.add(headerAddition);

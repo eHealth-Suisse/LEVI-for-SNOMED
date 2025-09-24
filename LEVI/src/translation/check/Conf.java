@@ -22,6 +22,7 @@ public class Conf {
 	
 	private static String countryCode = "CH";
 	private static boolean transformEszett = true; // ture = Eszeet should be changed to "ss" in the translations
+	private static boolean regexCheck = false; // true = regex check is performed on the terms in the current file
 		
 	
 	
@@ -124,6 +125,10 @@ public class Conf {
 	
 	public static String getCountryCode() {
 		return countryCode;
+	}
+	
+	public boolean checkRegex() {
+		return regexCheck;
 	}
 
 }
