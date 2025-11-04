@@ -21,7 +21,7 @@ public class DescriptionInactivationLoader {
         if (header != null) {
             for (Cell cell : header) {
                 String headerValue = getCellAsString(cell);
-                if ("Language Code".equalsIgnoreCase(headerValue)) {
+                if ("Language Code (require if the term is specified)".equalsIgnoreCase(headerValue)) {
                     hasLanguageCode = true;
                     languageCodeColumnIndex = cell.getColumnIndex();
                     break;
@@ -52,16 +52,13 @@ public class DescriptionInactivationLoader {
 //            System.out.println("Size of row " + row.getRowNum() + ": " + row.getPhysicalNumberOfCells());
 
             String descriptionId = getCellAsString(row.getCell(0));
-			String term = getCellAsString(row.getCell(2));
-			String conceptId = getCellAsString(row.getCell(9));
+			String term = getCellAsString(row.getCell(4));
+			String conceptId = getCellAsString(row.getCell(2));
 			String lang = null;
 			
 			//if language code is present, use from the cell
 			if (language != null) {
 				lang = language;
-			} else {
-				System.out.println("There is a language code tab in the header, but no language code was found in the file. Please check the file.");
-				System.exit(0);
 			}
 			
 	        if (hasLanguageCode && languageCodeColumnIndex >= 0) {
