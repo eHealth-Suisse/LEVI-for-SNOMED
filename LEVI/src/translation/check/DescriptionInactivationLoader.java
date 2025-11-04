@@ -59,9 +59,6 @@ public class DescriptionInactivationLoader {
 			//if language code is present, use from the cell
 			if (language != null) {
 				lang = language;
-			} else {
-				System.out.println("There is a language code tab in the header, but no language code was found in the file. Please check the file.");
-				System.exit(0);
 			}
 			
 	        if (hasLanguageCode && languageCodeColumnIndex >= 0) {
