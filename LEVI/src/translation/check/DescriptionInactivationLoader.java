@@ -21,7 +21,7 @@ public class DescriptionInactivationLoader {
         if (header != null) {
             for (Cell cell : header) {
                 String headerValue = getCellAsString(cell);
-                if ("Language Code".equalsIgnoreCase(headerValue)) {
+                if (headerValue != null && headerValue.toLowerCase().contains("language code".toLowerCase())) {
                     hasLanguageCode = true;
                     languageCodeColumnIndex = cell.getColumnIndex();
                     break;
@@ -48,18 +48,25 @@ public class DescriptionInactivationLoader {
         for (int i = 1; i < rowCount; i++) { // skip header
             Row row = sheet.getRow(i);
             if (row == null) continue;
+            String descriptionId = null;
+            String term = null;
+            String conceptId = null;
             
-//            System.out.println("Size of row " + row.getRowNum() + ": " + row.getPhysicalNumberOfCells());
-
-            String descriptionId = getCellAsString(row.getCell(0));
-			String term = getCellAsString(row.getCell(2));
-			String conceptId = getCellAsString(row.getCell(9));
-			String lang = null;
+            if(!hasLanguageCode) { //for older version of inactivation files without language code column
+            	descriptionId = getCellAsString(row.getCell(0));
+    			term = getCellAsString(row.getCell(2));
+    			conceptId = getCellAsString(row.getCell(9));
+			} else { //for newer version of inactivation files with language code column
+	            descriptionId = getCellAsString(row.getCell(0));
+				term = getCellAsString(row.getCell(4));
+				conceptId = getCellAsString(row.getCell(2));
+				if (hasLanguageCode) {
+					language = getCellAsString(row.getCell(1));;
+				}
+			}
 			
 			//if language code is present, use from the cell
-			if (language != null) {
-				lang = language;
-			} else {
+			if (hasLanguageCode && language == null) {
 				System.out.println("There is a language code tab in the header, but no language code was found in the file. Please check the file.");
 				System.exit(0);
 			}
@@ -67,14 +74,18 @@ public class DescriptionInactivationLoader {
 	        if (hasLanguageCode && languageCodeColumnIndex >= 0) {
 	            String dynamicLang = getCellAsString(row.getCell(languageCodeColumnIndex));
 	            if (dynamicLang != null && !dynamicLang.isEmpty()) {
-	                lang = dynamicLang.toLowerCase();
+	            	language = dynamicLang.trim().toLowerCase();
 	            }
+	        }
+	        
+	        if (language != null) {
+	            language = language.trim().toLowerCase();
 	        }
 
             if(releaseType.equals("previous")) {
-            	collector.setFullInactivationsPrevious(descriptionId, term, lang, conceptId);
+            	collector.setFullInactivationsPrevious(descriptionId, term, language, conceptId);
 			} else {
-				collector.setFullInactivationsCurrent(descriptionId, term, lang, conceptId);
+				collector.setFullInactivationsCurrent(descriptionId, term, language, conceptId);
 			}   
         }
     }

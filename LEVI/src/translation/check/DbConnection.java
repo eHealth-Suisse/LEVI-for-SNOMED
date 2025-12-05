@@ -32,21 +32,13 @@ public class DbConnection {
 	// JDBC driver and connection settings
 	private Connection connection;
 	private ResultCollector resultCollector;
-	private Conf conf = new Conf();
+    private final Conf conf;
 	
-//	static String JDBC_DRIVER = Conf.getJDBC_DRIVER();
-	static String SERVER_URL = Conf.getSERVER_URL();
-	static String USERNAME = Conf.getUSERNAME();
-	static String PASSWORD = Conf.getPASSWORD();
+	public DbConnection(ResultCollector collector, Conf conf) {
+        this.resultCollector = collector;
+        this.conf = conf;
+	}
 	
-
-	public DbConnection(ResultCollector collector) {
-		this.resultCollector = collector;
-	}
-
-	public DbConnection() {
-		// Default constructor for cases where ResultCollector is not needed
-	}
 
 	/**
 	 * Opens a new database connection.
@@ -57,7 +49,7 @@ public class DbConnection {
 	public void connect() throws SQLException, ClassNotFoundException {
 //		Class.forName(JDBC_DRIVER);
 		try {
-			connection = DriverManager.getConnection(SERVER_URL, USERNAME, PASSWORD);
+			connection = DriverManager.getConnection(conf.getSERVER_URL(), conf.getUSERNAME(), conf.getPASSWORD());
 		} catch (SQLException e) {
 			System.err.println("Failed to establish connection: " + e.getMessage());
 		}
@@ -220,9 +212,9 @@ public class DbConnection {
 	    // create TEMP TABLE with languageCode
 	    String createTempTable = """
 	        CREATE TEMPORARY TABLE IF NOT EXISTS tmp_pairs (
-	            term VARCHAR(255),
-	            conceptId VARCHAR(50),
-	            languageCode VARCHAR(10)
+	            term VARBINARY(255),
+	            conceptId VARBINARY(50),
+	            languageCode VARBINARY(10)
 	        )
 	    """;
 
@@ -415,7 +407,6 @@ public class DbConnection {
 		}
 
 		while (rs.next()) {
-	        // Spalten einmal laden
 	        String descriptionId       = getSafe(rs, "id", availableColumns);
 	        String conceptId           = getSafe(rs, "conceptId", availableColumns);
 	        String conceptStatus       = getSafe(rs, "conceptActive", availableColumns);

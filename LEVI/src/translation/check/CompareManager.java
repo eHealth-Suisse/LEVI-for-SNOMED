@@ -6,10 +6,18 @@ import java.util.List;
 
 public class CompareManager {
 
-	private final ResultCollector resultCollector = new ResultCollector();
-	private final Comparator comparator = new Comparator(resultCollector);
-	private final FileReaderUtil reader = new FileReaderUtil(resultCollector);
-	private final FileWriterUtil writer = new FileWriterUtil();
+	private final ResultCollector resultCollector;
+	private final FileReaderUtil reader;
+	private final FileWriterUtil writer;
+	private final Comparator comparator;
+	
+    public CompareManager(Conf conf) {
+        this.resultCollector = new ResultCollector();
+        this.reader = new FileReaderUtil(resultCollector);
+        this.writer = new FileWriterUtil();
+        this.comparator = new Comparator(resultCollector, conf);
+    }
+    
 
 	public void runTranslationOverview(String path, String destination)
 			throws IOException, ClassNotFoundException, SQLException {
